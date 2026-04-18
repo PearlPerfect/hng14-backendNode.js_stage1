@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Profiles API — Documentation</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0c0e10;
+    --surface: #131619;
+    --surface2: #1b1f24;
+    --border: #252a30;
+    --accent: #00e5a0;
+    --accent2: #0ea5e9;
+    --danger: #f43f5e;
+    --warn: #fb923c;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* grid noise bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ── header ── */
+  header {
+    padding: 60px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+    letter-spacing: 0.1em;
+  }
+  header h1 {
+    font-size: clamp(32px, 6vw, 56px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  header h1 span { color: var(--accent); }
+  header p {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 15px;
+    font-family: var(--mono);
+    max-width: 520px;
+  }
+
+  /* ── env switcher ── */
+  .env-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+  }
+  .env-bar label { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .env-toggle {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .env-toggle button {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .env-toggle button.active {
+    background: var(--accent);
+    color: #000;
+    font-weight: 600;
+  }
+  #custom-url-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #custom-url {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    width: 280px;
+    outline: none;
+    transition: border .2s;
+  }
+  #custom-url:focus { border-color: var(--accent); }
+  .base-display {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    background: rgba(0,229,160,0.07);
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,229,160,0.2);
+  }
+
+  /* ── section ── */
+  .section-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── endpoint card ── */
+  .endpoint {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .endpoint:hover { border-color: #2e3740; }
+
+  .ep-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .ep-header:hover { background: var(--surface2); }
+
+  .method {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    min-width: 58px;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .method.post   { background: rgba(0,229,160,0.12);  color: var(--accent);  border: 1px solid rgba(0,229,160,0.3); }
+  .method.get    { background: rgba(14,165,233,0.12); color: var(--accent2); border: 1px solid rgba(14,165,233,0.3); }
+  .method.delete { background: rgba(244,63,94,0.12);  color: var(--danger);  border: 1px solid rgba(244,63,94,0.3); }
+
+  .ep-path {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--text);
+    flex: 1;
+  }
+  .ep-desc {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .ep-chevron {
+    font-size: 12px;
+    color: var(--muted);
+    transition: transform .2s;
+  }
+  .endpoint.open .ep-chevron { transform: rotate(180deg); }
+
+  .ep-body {
+    display: none;
+    border-top: 1px solid var(--border);
+  }
+  .endpoint.open .ep-body { display: block; }
+
+  .ep-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  @media (max-width: 640px) { .ep-cols { grid-template-columns: 1fr; } }
+
+  .ep-col {
+    padding: 22px;
+    border-right: 1px solid var(--border);
+  }
+  .ep-col:last-child { border-right: none; }
+
+  .col-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  /* fields */
+  .field-row { margin-bottom: 12px; }
+  .field-row label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .field-row input, .field-row select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 12px;
+    border-radius: 5px;
+    outline: none;
+    transition: border .2s;
+  }
+  .field-row input:focus,
+  .field-row select:focus { border-color: var(--accent); }
+  .field-row select option { background: var(--bg); }
+
+  /* send button */
+  .send-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: opacity .2s, transform .1s;
+    margin-top: 4px;
+  }
+  .send-btn:active { transform: scale(0.97); }
+  .send-btn.post-btn   { background: var(--accent);  color: #000; }
+  .send-btn.get-btn    { background: var(--accent2); color: #000; }
+  .send-btn.delete-btn { background: var(--danger);  color: #fff; }
+  .send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* response */
+  .response-area {
+    position: relative;
+  }
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    min-height: 22px;
+  }
+  .status-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .status-pill.ok     { background: rgba(0,229,160,0.15); color: var(--accent); }
+  .status-pill.err    { background: rgba(244,63,94,0.15);  color: var(--danger); }
+  .status-pill.warn   { background: rgba(251,146,60,0.15); color: var(--warn); }
+  .status-pill.idle   { background: var(--border); color: var(--muted); }
+
+  .latency {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  pre.response-json {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    min-height: 80px;
+    color: var(--muted);
+  }
+  pre.response-json.loaded { color: var(--text); }
+  .copy-btn {
+    position: absolute;
+    top: 28px;
+    right: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color .2s, border-color .2s;
+  }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* json syntax highlight */
+  .json-key    { color: #7dd3fc; }
+  .json-str    { color: #86efac; }
+  .json-num    { color: #fbbf24; }
+  .json-bool   { color: #f472b6; }
+  .json-null   { color: var(--muted); }
+
+  /* note box */
+  .note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: rgba(14,165,233,0.05);
+    border: 1px solid rgba(14,165,233,0.15);
+    border-radius: 5px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+
+  /* ── error ref ── */
+  .error-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 0;
+  }
+  .error-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+  }
+  .error-code {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .error-code.c400 { color: var(--warn); }
+  .error-code.c404 { color: var(--accent2); }
+  .error-code.c422 { color: #a78bfa; }
+  .error-code.c502 { color: var(--danger); }
+  .error-code.c500 { color: var(--danger); }
+  .error-desc { font-family: var(--mono); font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  /* loader spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  /* fade in */
+  @keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: none; } }
+  .endpoint { animation: fadeUp .4s ease both; }
+  .endpoint:nth-child(1) { animation-delay: .05s; }
+  .endpoint:nth-child(2) { animation-delay: .10s; }
+  .endpoint:nth-child(3) { animation-delay: .15s; }
+  .endpoint:nth-child(4) { animation-delay: .20s; }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <div class="badge">v1.0.0 · REST API</div>
+    <h1>Profiles<br/><span>API Docs</span></h1>
+    <p>// Interactive documentation — test every endpoint live from this page</p>
+  </header>
+
+  <!-- Env Switcher -->
+  <div class="env-bar">
+    <label>BASE URL</label>
+    <div class="env-toggle">
+      <button class="active" onclick="setEnv('local')">Local</button>
+      <button onclick="setEnv('prod')">Production</button>
+      <button onclick="setEnv('custom')">Custom</button>
+    </div>
+    <div id="custom-url-wrap" style="display:none">
+      <input id="custom-url" type="text" placeholder="https://your-api.vercel.app" oninput="applyCustom()"/>
+    </div>
+    <div class="base-display" id="base-display">http://localhost:3000</div>
+  </div>
+
+  <!-- Endpoints -->
+  <div class="section-title">Endpoints</div>
+
+  <!-- POST /api/profiles -->
+  <div class="endpoint" id="ep-create">
+    <div class="ep-header" onclick="toggle('ep-create')">
+      <span class="method post">POST</span>
+      <span class="ep-path">/api/profiles</span>
+      <span class="ep-desc">Create a new profile</span>
+      <span class="ep-chevron">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="ep-cols">
+        <div class="ep-col">
+          <div class="col-label">Request</div>
+          <div class="field-row">
+            <label>name (string, required)</label>
+            <input type="text" id="create-name" placeholder="e.g. ella" />
+          </div>
+          <button class="send-btn post-btn" onclick="runCreate()">Send Request →</button>
+          <div class="note">
+            Calls Genderize, Agify, and Nationalize in parallel.<br/>
+            Returns 200 if the name already exists, 201 if newly created.<br/>
+            Returns 502 if any external API returns invalid data.
+          </div>
+        </div>
+        <div class="ep-col">
+          <div class="col-label">Response</div>
+          <div class="response-area">
+            <div class="status-bar">
+              <span class="status-pill idle" id="create-status">idle</span>
+              <span class="latency" id="create-latency"></span>
+            </div>
+            <pre class="response-json" id="create-res">// response will appear here</pre>
+            <button class="copy-btn" onclick="copyRes('create-res')">copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GET /api/profiles -->
+  <div class="endpoint" id="ep-list">
+    <div class="ep-header" onclick="toggle('ep-list')">
+      <span class="method get">GET</span>
+      <span class="ep-path">/api/profiles</span>
+      <span class="ep-desc">List all profiles with optional filters</span>
+      <span class="ep-chevron">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="ep-cols">
+        <div class="ep-col">
+          <div class="col-label">Query Parameters (all optional)</div>
+          <div class="field-row">
+            <label>gender</label>
+            <select id="list-gender">
+              <option value="">— any —</option>
+              <option value="male">male</option>
+              <option value="female">female</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label>country_id</label>
+            <input type="text" id="list-country" placeholder="e.g. NG, US, GB" />
+          </div>
+          <div class="field-row">
+            <label>age_group</label>
+            <select id="list-age-group">
+              <option value="">— any —</option>
+              <option value="child">child</option>
+              <option value="teenager">teenager</option>
+              <option value="adult">adult</option>
+              <option value="senior">senior</option>
+            </select>
+          </div>
+          <button class="send-btn get-btn" onclick="runList()">Send Request →</button>
+          <div class="note">Filters are case-insensitive. Returns count + array of matching profiles.</div>
+        </div>
+        <div class="ep-col">
+          <div class="col-label">Response</div>
+          <div class="response-area">
+            <div class="status-bar">
+              <span class="status-pill idle" id="list-status">idle</span>
+              <span class="latency" id="list-latency"></span>
+            </div>
+            <pre class="response-json" id="list-res">// response will appear here</pre>
+            <button class="copy-btn" onclick="copyRes('list-res')">copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GET /api/profiles/:id -->
+  <div class="endpoint" id="ep-get">
+    <div class="ep-header" onclick="toggle('ep-get')">
+      <span class="method get">GET</span>
+      <span class="ep-path">/api/profiles/:id</span>
+      <span class="ep-desc">Fetch a single profile by ID</span>
+      <span class="ep-chevron">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="ep-cols">
+        <div class="ep-col">
+          <div class="col-label">Path Parameter</div>
+          <div class="field-row">
+            <label>id (UUID v7, required)</label>
+            <input type="text" id="get-id" placeholder="paste a profile id here" />
+          </div>
+          <button class="send-btn get-btn" onclick="runGet()">Send Request →</button>
+          <div class="note">Returns 404 if no profile exists with the given id.</div>
+        </div>
+        <div class="ep-col">
+          <div class="col-label">Response</div>
+          <div class="response-area">
+            <div class="status-bar">
+              <span class="status-pill idle" id="get-status">idle</span>
+              <span class="latency" id="get-latency"></span>
+            </div>
+            <pre class="response-json" id="get-res">// response will appear here</pre>
+            <button class="copy-btn" onclick="copyRes('get-res')">copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE /api/profiles/:id -->
+  <div class="endpoint" id="ep-del">
+    <div class="ep-header" onclick="toggle('ep-del')">
+      <span class="method delete">DELETE</span>
+      <span class="ep-path">/api/profiles/:id</span>
+      <span class="ep-desc">Delete a profile by ID</span>
+      <span class="ep-chevron">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="ep-cols">
+        <div class="ep-col">
+          <div class="col-label">Path Parameter</div>
+          <div class="field-row">
+            <label>id (UUID v7, required)</label>
+            <input type="text" id="del-id" placeholder="paste a profile id here" />
+          </div>
+          <button class="send-btn delete-btn" onclick="runDelete()">Send Request →</button>
+          <div class="note">Returns 204 No Content on success. Returns 404 if id not found.</div>
+        </div>
+        <div class="ep-col">
+          <div class="col-label">Response</div>
+          <div class="response-area">
+            <div class="status-bar">
+              <span class="status-pill idle" id="del-status">idle</span>
+              <span class="latency" id="del-latency"></span>
+            </div>
+            <pre class="response-json" id="del-res">// response will appear here</pre>
+            <button class="copy-btn" onclick="copyRes('del-res')">copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Reference -->
+  <div class="section-title" style="margin-top:52px">Error Reference</div>
+  <div class="error-grid">
+    <div class="error-card">
+      <div class="error-code c400">400</div>
+      <div class="error-desc">Bad Request — name field is missing or empty in the request body</div>
+    </div>
+    <div class="error-card">
+      <div class="error-code c422">422</div>
+      <div class="error-desc">Unprocessable Entity — name field is the wrong type (e.g. a number)</div>
+    </div>
+    <div class="error-card">
+      <div class="error-code c404">404</div>
+      <div class="error-desc">Not Found — no profile exists with the given UUID</div>
+    </div>
+    <div class="error-card">
+      <div class="error-code c502">502</div>
+      <div class="error-desc">Bad Gateway — Genderize, Agify, or Nationalize returned invalid or null data</div>
+    </div>
+    <div class="error-card">
+      <div class="error-code c500">500</div>
+      <div class="error-desc">Internal Server Error — unexpected server-side failure</div>
+    </div>
+  </div>
+
+  <!-- Classification Rules -->
+  <div class="section-title" style="margin-top:52px">Classification Rules</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="error-card">
+      <div class="error-code" style="color:var(--accent);font-size:14px;margin-bottom:8px;">Age Group (from Agify)</div>
+      <div class="error-desc">
+        0 – 12 → <strong style="color:var(--text)">child</strong><br/>
+        13 – 19 → <strong style="color:var(--text)">teenager</strong><br/>
+        20 – 59 → <strong style="color:var(--text)">adult</strong><br/>
+        60+ → <strong style="color:var(--text)">senior</strong>
+      </div>
+    </div>
+    <div class="error-card">
+      <div class="error-code" style="color:var(--accent);font-size:14px;margin-bottom:8px;">Nationality (from Nationalize)</div>
+      <div class="error-desc">
+        The country with the highest <strong style="color:var(--text)">probability</strong> value in the response array is chosen as <strong style="color:var(--text)">country_id</strong>.
+      </div>
+    </div>
+  </div>
+
+  <footer>Profiles API · Node.js · Express · SQLite · UUID v7 · UTC timestamps</footer>
+</div>
+
+<script>
+  // ── state ──
+  let BASE = 'http://localhost:3000';
+  const PROD_URL = ''; // Set your production URL here if desired
+
+  function setEnv(env) {
+    document.querySelectorAll('.env-toggle button').forEach((b,i) => b.classList.remove('active'));
+    const btns = document.querySelectorAll('.env-toggle button');
+    document.getElementById('custom-url-wrap').style.display = 'none';
+    if (env === 'local') {
+      btns[0].classList.add('active');
+      BASE = 'http://localhost:3000';
+    } else if (env === 'prod') {
+      btns[1].classList.add('active');
+      BASE = PROD_URL || prompt('Enter your production base URL:') || BASE;
+    } else {
+      btns[2].classList.add('active');
+      document.getElementById('custom-url-wrap').style.display = 'flex';
+      BASE = document.getElementById('custom-url').value || BASE;
+    }
+    document.getElementById('base-display').textContent = BASE;
+  }
+
+  function applyCustom() {
+    BASE = document.getElementById('custom-url').value || 'http://localhost:3000';
+    document.getElementById('base-display').textContent = BASE;
+  }
+
+  // ── toggle endpoint open/close ──
+  function toggle(id) {
+    document.getElementById(id).classList.toggle('open');
+  }
+
+  // ── syntax highlight ──
+  function highlight(json) {
+    return json
+      .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (m) => {
+        if (/^"/.test(m)) {
+          if (/:$/.test(m)) return `<span class="json-key">${m}</span>`;
+          return `<span class="json-str">${m}</span>`;
+        }
+        if (/true|false/.test(m)) return `<span class="json-bool">${m}</span>`;
+        if (/null/.test(m)) return `<span class="json-null">${m}</span>`;
+        return `<span class="json-num">${m}</span>`;
+      });
+  }
+
+  // ── set response ──
+  function setResponse(prefix, status, body, ms) {
+    const pill = document.getElementById(`${prefix}-status`);
+    const pre  = document.getElementById(`${prefix}-res`);
+    const lat  = document.getElementById(`${prefix}-latency`);
+    pill.className = 'status-pill ' + (status < 300 ? 'ok' : status < 500 ? 'warn' : 'err');
+    pill.textContent = status;
+    lat.textContent = ms !== null ? `${ms}ms` : '';
+    pre.classList.add('loaded');
+    pre.innerHTML = highlight(body);
+  }
+
+  function setLoading(prefix) {
+    const pill = document.getElementById(`${prefix}-status`);
+    const pre  = document.getElementById(`${prefix}-res`);
+    const lat  = document.getElementById(`${prefix}-latency`);
+    pill.className = 'status-pill idle';
+    pill.innerHTML = '<span class="spinner"></span>sending';
+    lat.textContent = '';
+    pre.classList.remove('loaded');
+    pre.innerHTML = '// waiting for response...';
+  }
+
+  // ── copy ──
+  function copyRes(id) {
+    const text = document.getElementById(id).innerText;
+    navigator.clipboard.writeText(text);
+  }
+
+  // ── API calls ──
+  async function runCreate() {
+    const name = document.getElementById('create-name').value.trim();
+    if (!name) { alert('Enter a name first'); return; }
+    setLoading('create');
+    const t = Date.now();
+    try {
+      const res = await fetch(`${BASE}/api/profiles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const data = await res.json();
+      setResponse('create', res.status, JSON.stringify(data, null, 2), Date.now() - t);
+
+      // auto-fill id fields if successful
+      if (data.data && data.data.id) {
+        document.getElementById('get-id').value = data.data.id;
+        document.getElementById('del-id').value = data.data.id;
+      }
+    } catch (e) {
+      setResponse('create', 0, JSON.stringify({ error: e.message }), Date.now() - t);
+    }
+  }
+
+  async function runList() {
+    const gender    = document.getElementById('list-gender').value;
+    const country   = document.getElementById('list-country').value.trim();
+    const age_group = document.getElementById('list-age-group').value;
+    const params = new URLSearchParams();
+    if (gender)    params.set('gender', gender);
+    if (country)   params.set('country_id', country);
+    if (age_group) params.set('age_group', age_group);
+    const qs = params.toString() ? '?' + params.toString() : '';
+    setLoading('list');
+    const t = Date.now();
+    try {
+      const res = await fetch(`${BASE}/api/profiles${qs}`);
+      const data = await res.json();
+      setResponse('list', res.status, JSON.stringify(data, null, 2), Date.now() - t);
+    } catch (e) {
+      setResponse('list', 0, JSON.stringify({ error: e.message }), Date.now() - t);
+    }
+  }
+
+  async function runGet() {
+    const id = document.getElementById('get-id').value.trim();
+    if (!id) { alert('Enter a profile ID first'); return; }
+    setLoading('get');
+    const t = Date.now();
+    try {
+      const res = await fetch(`${BASE}/api/profiles/${id}`);
+      const data = await res.json();
+      setResponse('get', res.status, JSON.stringify(data, null, 2), Date.now() - t);
+    } catch (e) {
+      setResponse('get', 0, JSON.stringify({ error: e.message }), Date.now() - t);
+    }
+  }
+
+  async function runDelete() {
+    const id = document.getElementById('del-id').value.trim();
+    if (!id) { alert('Enter a profile ID first'); return; }
+    if (!confirm(`Delete profile ${id}?`)) return;
+    setLoading('del');
+    const t = Date.now();
+    try {
+      const res = await fetch(`${BASE}/api/profiles/${id}`, { method: 'DELETE' });
+      if (res.status === 204) {
+        setResponse('del', 204, JSON.stringify({ status: 'success', message: '204 No Content — profile deleted' }, null, 2), Date.now() - t);
+      } else {
+        const data = await res.json();
+        setResponse('del', res.status, JSON.stringify(data, null, 2), Date.now() - t);
+      }
+    } catch (e) {
+      setResponse('del', 0, JSON.stringify({ error: e.message }), Date.now() - t);
+    }
+  }
+
+  // open first endpoint by default
+  toggle('ep-create');
+</script>
+</body>
+</html>
