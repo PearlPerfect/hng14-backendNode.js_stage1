@@ -1,16 +1,17 @@
 const { v7: uuidv7 } = require('uuid');
-const db = require('../config/db');
+const pool = require('../config/db');
 const { fetchGenderize, fetchAgify, fetchNationalize } = require('./external.service');
 const { getAgeGroup, getTopCountry } = require('../utils/classify');
 
 async function createProfile(name) {
-  // Check for existing profile (idempotency)
-  const existing = db.prepare('SELECT * FROM profiles WHERE LOWER(name) = LOWER(?)').get(name);
-  if (existing) {
-    return { alreadyExists: true, data: existing };
+  const existing = await pool.query(
+    'SELECT * FROM profiles WHERE LOWER(name) = LOWER($1)',
+    [name]
+  );
+  if (existing.rows.length > 0) {
+    return { alreadyExists: true, data: existing.rows[0] };
   }
 
-  // Call all three APIs in parallel
   const [genderData, agifyData, nationalizeData] = await Promise.all([
     fetchGenderize(name),
     fetchAgify(name),
@@ -33,41 +34,49 @@ async function createProfile(name) {
     created_at: new Date().toISOString(),
   };
 
-  db.prepare(`
-    INSERT INTO profiles (id, name, gender, gender_probability, sample_size, age, age_group, country_id, country_probability, created_at)
-    VALUES (@id, @name, @gender, @gender_probability, @sample_size, @age, @age_group, @country_id, @country_probability, @created_at)
-  `).run(profile);
+  await pool.query(
+    `INSERT INTO profiles (id, name, gender, gender_probability, sample_size, age, age_group, country_id, country_probability, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [
+      profile.id, profile.name, profile.gender, profile.gender_probability,
+      profile.sample_size, profile.age, profile.age_group,
+      profile.country_id, profile.country_probability, profile.created_at
+    ]
+  );
 
   return { alreadyExists: false, data: profile };
 }
 
-function getProfileById(id) {
-  return db.prepare('SELECT * FROM profiles WHERE id = ?').get(id);
+async function getProfileById(id) {
+  const result = await pool.query('SELECT * FROM profiles WHERE id = $1', [id]);
+  return result.rows[0] || null;
 }
 
-function getAllProfiles(filters = {}) {
+async function getAllProfiles(filters = {}) {
   let query = 'SELECT * FROM profiles WHERE 1=1';
   const params = [];
+  let i = 1;
 
   if (filters.gender) {
-    query += ' AND LOWER(gender) = LOWER(?)';
+    query += ` AND LOWER(gender) = LOWER($${i++})`;
     params.push(filters.gender);
   }
   if (filters.country_id) {
-    query += ' AND LOWER(country_id) = LOWER(?)';
+    query += ` AND LOWER(country_id) = LOWER($${i++})`;
     params.push(filters.country_id);
   }
   if (filters.age_group) {
-    query += ' AND LOWER(age_group) = LOWER(?)';
+    query += ` AND LOWER(age_group) = LOWER($${i++})`;
     params.push(filters.age_group);
   }
 
-  return db.prepare(query).all(...params);
+  const result = await pool.query(query, params);
+  return result.rows;
 }
 
-function deleteProfile(id) {
-  const result = db.prepare('DELETE FROM profiles WHERE id = ?').run(id);
-  return result.changes > 0;
+async function deleteProfile(id) {
+  const result = await pool.query('DELETE FROM profiles WHERE id = $1', [id]);
+  return result.rowCount > 0;
 }
 
 module.exports = { createProfile, getProfileById, getAllProfiles, deleteProfile };
